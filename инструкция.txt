@@ -89,7 +89,7 @@ Page1.xaml.cs
 public Page1()
 {
 InitializeComponent();
-IsVisibleChanged += (s, e) =&gt; { if (IsVisible) Refresh(); };
+IsVisibleChanged += (s, e) => { if (IsVisible) Refresh(); };
 }
 private void Refresh()
 {
@@ -195,3 +195,6 @@ NavigationService.GoBack();
 }
 }
 }
+
+Если не запустилось в page1.xaml.cs вписать
+using System.Data;
