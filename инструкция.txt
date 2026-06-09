@@ -1,0 +1,197 @@
+MainWindow.xaml
+<Grid>
+<Grid.RowDefinitions>
+<RowDefinition Height="Auto"/>
+<RowDefinition Height="*"/>
+</Grid.RowDefinitions>
+<Button x:Name="BackButton"
+Content="Назад"
+Width="80" Height="30"
+HorizontalAlignment="Left"
+Margin="10"
+Click="BackButton_Click"
+Visibility="Collapsed"/>
+<Frame x:Name="MainFrame"
+Grid.Row="1"
+NavigationUIVisibility="Hidden"/>
+</Grid>
+
+
+MainWindow.xaml.cs
+public MainWindow()
+{
+InitializeComponent();
+MainFrame.Navigated += MainFrame_Navigated;
+MainFrame.Navigate(new Page1());
+}
+private void MainFrame_Navigated(object sender, System.Windows.Navigation.NavigationEventArgs e)
+{
+BackButton.Visibility = MainFrame.CanGoBack ? Visibility.Visible : Visibility.Collapsed;
+}
+private void BackButton_Click(object sender, RoutedEventArgs e)
+{
+if (MainFrame.CanGoBack)
+MainFrame.GoBack();
+}
+}
+
+
+Data.cs (manager.cs)
+namespace WpfApp1
+{
+static class Data
+{
+public static readonly _1DataSet Set = new _1DataSet();
+public static readonly _1DataSetTableAdapters.clientTableAdapter Clients =
+new _1DataSetTableAdapters.clientTableAdapter();
+}
+}
+
+
+Page1.xaml
+<Grid Margin="10">
+<Grid.RowDefinitions>
+<RowDefinition Height="Auto"/>
+<RowDefinition Height="*"/>
+<RowDefinition Height="Auto"/>
+</Grid.RowDefinitions>
+<TextBlock Text="Список клиентов"
+FontSize="24"
+FontWeight="Bold"
+Margin="0,0,0,10"/>
+<DataGrid x:Name="DGClient"
+Grid.Row="1"
+AutoGenerateColumns="True"
+IsReadOnly="True"
+CanUserAddRows="False"
+Margin="0,10"/>
+<StackPanel Grid.Row="2" Orientation="Horizontal"
+HorizontalAlignment="Right" Margin="0,10">
+<Button x:Name="AddButton"
+Content="Добавить"
+Width="100" Height="30"
+Click="AddButton_Click"
+Margin="0,0,10,0"/>
+<Button x:Name="EditButton"
+Content="Изменить"
+Width="100" Height="30"
+Click="EditButton_Click"
+Margin="0,0,10,0"/>
+<Button x:Name="DeleteButton"
+Content="Удалить"
+Width="100" Height="30"
+Click="DeleteButton_Click"/>
+</StackPanel>
+</Grid>
+
+
+Page1.xaml.cs
+public Page1()
+{
+InitializeComponent();
+IsVisibleChanged += (s, e) =&gt; { if (IsVisible) Refresh(); };
+}
+private void Refresh()
+{
+Data.Clients.Fill(Data.Set.client);
+DGClient.ItemsSource = Data.Set.client.DefaultView;
+}
+private _1DataSet.clientRow SelectedClient()
+{
+return (DGClient.SelectedItem as DataRowView)?.Row as _1DataSet.clientRow;
+}
+private void AddButton_Click(object sender, RoutedEventArgs e)
+{
+NavigationService.Navigate(new Page2());
+}
+private void EditButton_Click(object sender, RoutedEventArgs e)
+{
+var client = SelectedClient();
+if (client == null)
+MessageBox.Show("Выберите клиента", "Внимание");
+else
+NavigationService.Navigate(new Page2(client));
+}
+private void DeleteButton_Click(object sender, RoutedEventArgs e)
+{
+var client = SelectedClient();
+if (client == null)
+{
+MessageBox.Show("Выберите клиента", "Внимание");
+return;
+}
+if (MessageBox.Show("Удалить клиента?", "Подтверждение",
+MessageBoxButton.YesNo) != MessageBoxResult.Yes)
+return;
+try
+{
+Data.Clients.Delete(client.id_client, client.Name, client.Number, client.Car);
+Refresh();
+}
+catch (Exception ex)
+{
+MessageBox.Show(ex.Message, "Ошибка");
+}
+
+
+Page2.xaml
+<StackPanel Margin="20">
+<TextBlock Text="Информация о клиенте" FontSize="24" FontWeight="Bold" Margin="0,0,0,20"/>
+<TextBlock Text="Имя клиента:" Margin="0,5"/>
+<TextBox x:Name="NameTextBox" MaxLength="100" Margin="0,0,0,10"/>
+<TextBlock Text="Телефон:" Margin="0,5"/>
+<TextBox x:Name="NumberTextBox" MaxLength="20" Margin="0,0,0,10"/>
+<TextBlock Text="Автомобиль:" Margin="0,5"/>
+<TextBox x:Name="CarTextBox" MaxLength="100" Margin="0,0,0,20"/>
+<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+<Button Content="Сохранить" Width="100" Height="30" Click="SaveButton_Click" Margin="0,0,10,0"/>
+<Button Content="Отмена" Width="100" Height="30" Click="CancelButton_Click"/>
+</StackPanel>
+</StackPanel>
+
+
+Page2.xaml.cs
+public partial class Page2 : Page
+{
+private readonly _1DataSet.clientRow _client;
+public Page2(_1DataSet.clientRow client = null)
+{
+InitializeComponent();
+_client = client;
+if (_client != null)
+{
+NameTextBox.Text = _client.Name;
+NumberTextBox.Text = _client.Number;
+CarTextBox.Text = _client.Car;
+}
+}
+private void SaveButton_Click(object sender, RoutedEventArgs e)
+{
+string name = NameTextBox.Text.Trim();
+string number = NumberTextBox.Text.Trim();
+string car = CarTextBox.Text.Trim();
+if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(number) || string.IsNullOrEmpty(car))
+{
+MessageBox.Show("Заполните все поля", "Ошибка");
+return;
+}
+try
+{
+if (_client == null)
+Data.Clients.Insert(name, number, car);
+else
+Data.Clients.Update(name, number, car,
+_client.id_client, _client.Name, _client.Number, _client.Car, _client.id_client);
+NavigationService.GoBack();
+}
+catch (Exception ex)
+{
+MessageBox.Show(ex.Message, "Ошибка");
+}
+}
+private void CancelButton_Click(object sender, RoutedEventArgs e)
+{
+NavigationService.GoBack();
+}
+}
+}
